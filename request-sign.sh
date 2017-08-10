@@ -34,12 +34,12 @@ echo "extendedKeyUsage = serverAuth, clientAuth"                           >> "$
 
 DNS_LIST=$CN
 
-if [ -z "$@" ]; then
-  echo "subjectAltName = DNS:$CN"                                          >> "$USR_CERT"
-else
-  echo "subjectAltName = @alt_names"                                       >> "$USR_CERT"
-  ALT_NAMES=section
-fi
+# Session everytime - IVOSH
+#if [ -z "$@" ]; then
+#  echo "subjectAltName = $CN"                                              >> "$USR_CERT"
+#else
+#ALT_NAMES=section
+#fi
 
 [ ! -z "$CRT_URL" ] && echo "authorityInfoAccess = caIssuers;URI:$CRT_URL" >> "$USR_CERT"
 echo "subjectKeyIdentifier = hash"                                         >> "$USR_CERT"
@@ -47,16 +47,23 @@ echo "authorityKeyIdentifier = keyid,issuer"                               >> "$
 [ ! -z "$CRL_URL" ] && echo "crlDistributionPoints = URI:$CRL_URL"         >> "$USR_CERT"
 echo "basicConstraints = CA:FALSE"                                         >> "$USR_CERT"
 
-if [ "$ALT_NAMES" == "section" ]; then
-  echo "[alt_names]"                                                       >> "$USR_CERT"
-  echo "DNS.1 = $CN"                                                       >> "$USR_CERT"
-  COUNT=2
-  for DNS in "$@"; do
+echo "subjectAltName = @alt_names"                                       >> "$USR_CERT"
+echo "[alt_names]"                                                       >> "$USR_CERT"
+echo "DNS.1 = $CN"                                                       >> "$USR_CERT"
+COUNTD=2
+COUNTI=1
+for DNS in "$@"; do
+if [[ "$DNS" =~ ^IP: ]]
+then
+    print_info "Including IP alias: ${DNS:3}"
+    echo "IP.$COUNTI = ${DNS:3}"                                         >> "$USR_CERT"
+    COUNTI=$((COUNTI + 1))
+else
     print_info "Including DNS alias: $DNS"
-    echo "DNS.$COUNT = $DNS"                                               >> "$USR_CERT"
-    COUNT=$((COUNT + 1))
-  done
+    echo "DNS.$COUNTD = $DNS"                                            >> "$USR_CERT"
+    COUNTD=$((COUNTD + 1))
 fi
+done
 
 
 generate_openssl_config
