@@ -12,6 +12,9 @@ if [ $# -lt 1 ]; then
 fi
 CN="$1"; shift
 
+generate_usrcert_config $@
+generate_openssl_config
+
 mkdir -p "$DATA/$CN"
 
 print_info "Generating a $BITS bit private key"

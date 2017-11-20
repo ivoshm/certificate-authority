@@ -16,56 +16,7 @@ if [ $# -lt 1 ]; then
 fi
 CN="$1"; shift
 
-if [ ! -e "$DATA/$CN/$CN.csr" ]; then
-  print_error "Certificate Signing Request (CSR) not found at '$DATA/$CN/$CN.csr'"
-  print_error "Either generate one using './request-generate.sh $CN' or place an existing one there"
-  exit 1
-fi
-
-print_info "Generating a $DATA/conf/usr_cert.cnf openssl config file"
-USR_CERT="$CONF/usr_cert.cnf"
-: > "$USR_CERT" || {
-  print_error "Failed to write to '$CONF/usr_cert.cnf'"
-  exit 1
-}
-
-echo "[ usr_cert ]"                                                        >> "$USR_CERT"
-echo "extendedKeyUsage = serverAuth, clientAuth"                           >> "$USR_CERT"
-
-DNS_LIST=$CN
-
-# Session everytime - IVOSH
-#if [ -z "$@" ]; then
-#  echo "subjectAltName = $CN"                                              >> "$USR_CERT"
-#else
-#ALT_NAMES=section
-#fi
-
-[ ! -z "$CRT_URL" ] && echo "authorityInfoAccess = caIssuers;URI:$CRT_URL" >> "$USR_CERT"
-echo "subjectKeyIdentifier = hash"                                         >> "$USR_CERT"
-echo "authorityKeyIdentifier = keyid,issuer"                               >> "$USR_CERT"
-[ ! -z "$CRL_URL" ] && echo "crlDistributionPoints = URI:$CRL_URL"         >> "$USR_CERT"
-echo "basicConstraints = CA:FALSE"                                         >> "$USR_CERT"
-
-echo "subjectAltName = @alt_names"                                       >> "$USR_CERT"
-echo "[alt_names]"                                                       >> "$USR_CERT"
-echo "DNS.1 = $CN"                                                       >> "$USR_CERT"
-COUNTD=2
-COUNTI=1
-for DNS in "$@"; do
-if [[ "$DNS" =~ ^IP: ]]
-then
-    print_info "Including IP alias: ${DNS:3}"
-    echo "IP.$COUNTI = ${DNS:3}"                                         >> "$USR_CERT"
-    COUNTI=$((COUNTI + 1))
-else
-    print_info "Including DNS alias: $DNS"
-    echo "DNS.$COUNTD = $DNS"                                            >> "$USR_CERT"
-    COUNTD=$((COUNTD + 1))
-fi
-done
-
-
+generate_usrcert_config $@
 generate_openssl_config
 
 openssl ca -batch -config "$DATA/generated.cnf" -out "$DATA/$CN/$CN.crt" -infiles "$DATA/$CN/$CN.csr"
