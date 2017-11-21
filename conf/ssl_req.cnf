@@ -44,6 +44,7 @@ unstructuredName		= An optional company name
 [ v3_req ]
 basicConstraints = CA:FALSE
 keyUsage = nonRepudiation, digitalSignature, keyEncipherment
+subjectAltName = @alt_names
 
 [ v3_ca ]
 subjectKeyIdentifier=hash
